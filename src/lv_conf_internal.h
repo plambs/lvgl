@@ -3109,6 +3109,15 @@
     #endif
 #endif
 
+/* LVGL Wayland backend */
+#ifndef LV_USE_WAYLAND
+    #ifdef CONFIG_LV_USE_WAYLAND
+        #define LV_USE_WAYLAND CONFIG_LV_USE_WAYLAND
+    #else
+        #define LV_USE_WAYLAND    0
+    #endif
+#endif
+
 /*==================
 * EXAMPLES
 *==================*/
