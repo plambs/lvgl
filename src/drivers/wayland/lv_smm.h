@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+#include "../../../lvgl.h"
+
 #if LV_USE_WAYLAND
 
 #include <stddef.h>

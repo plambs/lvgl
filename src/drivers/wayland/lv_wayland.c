@@ -3,12 +3,13 @@
  *
  */
 
-/*********************
- *      INCLUDES
- *********************/
 #include "../../../lvgl.h"
 
 #if LV_USE_WAYLAND
+
+/*********************
+ *      INCLUDES
+ *********************/
 
 #include "lv_wayland.h"
 #include "lv_smm.h"
@@ -43,7 +44,7 @@
  *      DEFINES
  *********************/
 
-#define BYTES_PER_PIXEL ((LV_COLOR_DEPTH + 7) / 8)
+#define BYTES_PER_PIXEL (sizeof(lv_color_t))
 #define LVGL_DRAW_BUFFER_DIV (8)
 #define DMG_CACHE_CAPACITY (32)
 #define TAG_LOCAL         (0)
@@ -162,7 +163,7 @@ struct application
 
     const char *xdg_runtime_dir;
 
-#ifdef LV_WAYLAND_CLIENT_SIDE_DECORATIONS
+#if LV_WAYLAND_CLIENT_SIDE_DECORATIONS
     bool opt_disable_decorations;
 #endif
 
@@ -238,10 +239,15 @@ struct window
  /* FUNCTIONS TO REMOVE */
 static void _color_fill(lv_color_t * buf, lv_color_t color, uint32_t px_num)
 {
-	for(int px_index = 0; px_index < px_num; px_index++)
-	{
-		memcpy(&buf[px_index], &color, sizeof(lv_color_t));
-	}
+	printf("Lib: %d - px_num: %d, size: %d \n", __LINE__, px_num, sizeof(lv_color_t));
+	//printf("color: %x, b:0x%x, g:0x%x, r:0x%x\n", (uint32_t)color, color.blue, color.green, color.red);
+	printf("b:0x%x, g:0x%x, r:0x%x\n", color.blue, color.green, color.red);
+    while(px_num) {
+		*buf = color;
+		buf++;
+        px_num--;
+    }
+	printf("Lib: %d\n", __LINE__);
 }
 
  /* END OF FUNCTIONS TO REMOVE SECTION */
@@ -1610,50 +1616,62 @@ static bool create_decoration(struct window *window,
     void *buf_base;
     int x, y;
 
+	printf("Lib: %d\n", __LINE__);
     switch (decoration->type)
     {
     case OBJECT_TITLEBAR:
+	printf("Lib: %d\n", __LINE__);
         decoration->width = window_width;
         decoration->height = TITLE_BAR_HEIGHT;
         break;
     case OBJECT_BUTTON_CLOSE:
+	printf("Lib: %d\n", __LINE__);
         decoration->width = BUTTON_SIZE;
         decoration->height = BUTTON_SIZE;
         break;
 #if LV_WAYLAND_XDG_SHELL
     case OBJECT_BUTTON_MAXIMIZE:
+	printf("Lib: %d\n", __LINE__);
         decoration->width = BUTTON_SIZE;
         decoration->height = BUTTON_SIZE;
         break;
     case OBJECT_BUTTON_MINIMIZE:
+	printf("Lib: %d\n", __LINE__);
         decoration->width = BUTTON_SIZE;
         decoration->height = BUTTON_SIZE;
         break;
 #endif
     case OBJECT_BORDER_TOP:
+	printf("Lib: %d\n", __LINE__);
         decoration->width = window_width + 2 * (BORDER_SIZE);
         decoration->height = BORDER_SIZE;
         break;
     case OBJECT_BORDER_BOTTOM:
+	printf("Lib: %d\n", __LINE__);
         decoration->width = window_width + 2 * (BORDER_SIZE);
         decoration->height = BORDER_SIZE;
         break;
     case OBJECT_BORDER_LEFT:
+	printf("Lib: %d\n", __LINE__);
         decoration->width = BORDER_SIZE;
         decoration->height = window_height + TITLE_BAR_HEIGHT;
         break;
     case OBJECT_BORDER_RIGHT:
+	printf("Lib: %d\n", __LINE__);
         decoration->width = BORDER_SIZE;
         decoration->height = window_height + TITLE_BAR_HEIGHT;
         break;
     default:
+	printf("Lib: %d\n", __LINE__);
         LV_ASSERT_MSG(0, "Invalid object type");
         return false;
     }
 
+	printf("Lib: %d\n", __LINE__);
     smm_resize(decoration->buffer_group,
                (decoration->width * BYTES_PER_PIXEL) * decoration->height);
 
+	printf("Lib: %d\n", __LINE__);
     buf = smm_acquire(decoration->buffer_group);
     if (buf == NULL)
     {
@@ -1661,6 +1679,7 @@ static bool create_decoration(struct window *window,
         return false;
     }
 
+	printf("Lib: %d\n", __LINE__);
     buf_base = smm_map(buf);
     if (buf_base == NULL)
     {
@@ -1669,13 +1688,16 @@ static bool create_decoration(struct window *window,
         return false;
     }
 
+	printf("Lib: %d\n", __LINE__);
     switch (decoration->type)
     {
     case OBJECT_TITLEBAR:
+	printf("Lib: %d\n", __LINE__);
         _color_fill((lv_color_t *)buf_base,
                       lv_color_make(0x66, 0x66, 0x66), (decoration->width * decoration->height));
         break;
     case OBJECT_BUTTON_CLOSE:
+	printf("Lib: %d\n", __LINE__);
         _color_fill((lv_color_t *)buf_base,
                       lv_color_make(0xCC, 0xCC, 0xCC), (decoration->width * decoration->height));
         for (y = 0; y < decoration->height; y++)
@@ -1699,6 +1721,7 @@ static bool create_decoration(struct window *window,
         break;
 #if LV_WAYLAND_XDG_SHELL
     case OBJECT_BUTTON_MAXIMIZE:
+	printf("Lib: %d\n", __LINE__);
         _color_fill((lv_color_t *)buf_base,
                       lv_color_make(0xCC, 0xCC, 0xCC), (decoration->width * decoration->height));
         for (y = 0; y < decoration->height; y++)
@@ -1718,6 +1741,7 @@ static bool create_decoration(struct window *window,
         }
         break;
     case OBJECT_BUTTON_MINIMIZE:
+	printf("Lib: %d\n", __LINE__);
         _color_fill((lv_color_t *)buf_base,
                       lv_color_make(0xCC, 0xCC, 0xCC), (decoration->width * decoration->height));
         for (y = 0; y < decoration->height; y++)
@@ -1741,13 +1765,16 @@ static bool create_decoration(struct window *window,
     case OBJECT_BORDER_LEFT:
         /* fallthrough */
     case OBJECT_BORDER_RIGHT:
+	printf("Lib: %d\n", __LINE__);
         _color_fill((lv_color_t *)buf_base,
                       lv_color_make(0x66, 0x66, 0x66), (decoration->width * decoration->height));
         break;
     default:
+	printf("Lib: %d\n", __LINE__);
         LV_ASSERT_MSG(0, "Invalid object type");
         return false;
     }
+	printf("Lib: %d\n", __LINE__);
 
     return attach_decoration(window, decoration, buf, window->body);
 }
@@ -1767,41 +1794,53 @@ static bool resize_window(struct window *window, int width, int height)
 {
     lv_color_t * buf1 = NULL;
 
+	printf("Lib: %d\n", __LINE__);
     LV_LOG_TRACE("resize window %dx%d", width, height);
 
+	printf("Lib: %d\n", __LINE__);
 #if LV_WAYLAND_CLIENT_SIDE_DECORATIONS
     int b;
     for (b = 0; b < NUM_DECORATIONS; b++)
     {
+	printf("Lib: %d\n", __LINE__);
         if (window->decoration[b] != NULL)
         {
             detach_decoration(window, window->decoration[b]);
         }
+	printf("Lib: %d\n", __LINE__);
     }
 #endif
 
+	printf("Lib: %d\n", __LINE__);
     /* Update size for newly allocated buffers */
     smm_resize(window->body->buffer_group, (width * BYTES_PER_PIXEL) * height);
 
+	printf("Lib: %d\n", __LINE__);
     window->width = width;
     window->height = height;
 
+	printf("Lib: %d\n", __LINE__);
     window->body->width = width;
     window->body->height = height;
 
+	printf("Lib: %d\n", __LINE__);
 #if LV_WAYLAND_CLIENT_SIDE_DECORATIONS
     if (!window->application->opt_disable_decorations && !window->fullscreen)
     {
+	printf("Lib: %d\n", __LINE__);
         for (b = 0; b < NUM_DECORATIONS; b++)
         {
+	printf("Lib: %d\n", __LINE__);
             if (!create_decoration(window, window->decoration[b],
                                    window->body->width, window->body->height))
             {
+	printf("Lib: %d\n", __LINE__);
                 LV_LOG_ERROR("failed to create decoration %d", b);
             }
         }
     }
 #endif
+	printf("Lib: %d\n", __LINE__);
 
     if (window->lv_disp != NULL)
     {
@@ -1819,6 +1858,7 @@ static bool resize_window(struct window *window, int width, int height)
         window->body->input.pointer.x = LV_MIN(window->body->input.pointer.x, (width - 1));
         window->body->input.pointer.y = LV_MIN(window->body->input.pointer.y, (height - 1));
     }
+	printf("Lib: %d\n", __LINE__);
 
     return true;
 }
@@ -1827,6 +1867,7 @@ static struct window *create_window(struct application *app, int width, int heig
 {
     struct window *window;
 
+	printf("Lib: %d\n", __LINE__);
     window = _lv_ll_ins_tail(&app->window_ll);
     LV_ASSERT_MALLOC(window);
     if (!window)
@@ -1834,10 +1875,13 @@ static struct window *create_window(struct application *app, int width, int heig
         return NULL;
     }
 
+	printf("Lib: %d\n", __LINE__);
     lv_memset(window, 0x00, sizeof(struct window));
 
+	printf("Lib: %d\n", __LINE__);
     window->application = app;
 
+	printf("Lib: %d\n", __LINE__);
     // Create wayland buffer and surface
     window->body = create_graphic_obj(app, window, OBJECT_WINDOW, NULL);
     if (!window->body)
@@ -1846,14 +1890,17 @@ static struct window *create_window(struct application *app, int width, int heig
         goto err_free_window;
     }
 
+	printf("Lib: %d\n", __LINE__);
     // Create shell surface
      if (0)
     {
         // Needed for #if madness below
+	printf("Lib: %d\n", __LINE__);
     }
 #if LV_WAYLAND_XDG_SHELL
     else if (app->xdg_wm)
     {
+	printf("Lib: %d\n", __LINE__);
         window->xdg_surface = xdg_wm_base_get_xdg_surface(app->xdg_wm, window->body->surface);
         if (!window->xdg_surface)
         {
@@ -1884,6 +1931,7 @@ static struct window *create_window(struct application *app, int width, int heig
 #if LV_WAYLAND_WL_SHELL
     else if (app->wl_shell)
     {
+	printf("Lib: %d\n", __LINE__);
         window->wl_shell_surface = wl_shell_get_shell_surface(app->wl_shell, window->body->surface);
         if (!window->wl_shell_surface)
         {
@@ -1898,6 +1946,7 @@ static struct window *create_window(struct application *app, int width, int heig
 #endif
     else
     {
+	printf("Lib: %d\n", __LINE__);
         LV_LOG_ERROR("No shell available");
         goto err_destroy_surface;
     }
@@ -1905,6 +1954,7 @@ static struct window *create_window(struct application *app, int width, int heig
 #if LV_WAYLAND_CLIENT_SIDE_DECORATIONS
     if (!app->opt_disable_decorations)
     {
+	printf("Lib: %d\n", __LINE__);
         int d;
         for (d = 0; d < NUM_DECORATIONS; d++)
         {
@@ -1916,12 +1966,16 @@ static struct window *create_window(struct application *app, int width, int heig
         }
     }
 #endif
+	printf("Lib: %d\n", __LINE__);
 
     if (!resize_window(window, width, height))
     {
+	printf("Lib: %d\n", __LINE__);
         LV_LOG_ERROR("Failed to resize window");
         goto err_destroy_shell_surface2;
     }
+	printf("Lib: %d\n", __LINE__);
+
 
     return window;
 
@@ -1929,6 +1983,7 @@ err_destroy_shell_surface2:
 #if LV_WAYLAND_XDG_SHELL
     if (window->xdg_toplevel)
     {
+	printf("Lib: %d\n", __LINE__);
         xdg_toplevel_destroy(window->xdg_toplevel);
     }
 #endif
@@ -1937,20 +1992,24 @@ err_destroy_shell_surface:
 #if LV_WAYLAND_WL_SHELL
     if (window->wl_shell_surface)
     {
+	printf("Lib: %d\n", __LINE__);
         wl_shell_surface_destroy(window->wl_shell_surface);
     }
 #endif
 #if LV_WAYLAND_XDG_SHELL
     if (window->xdg_surface)
     {
+	printf("Lib: %d\n", __LINE__);
         xdg_surface_destroy(window->xdg_surface);
     }
 #endif
 
 err_destroy_surface:
+	printf("Lib: %d\n", __LINE__);
     wl_surface_destroy(window->body->surface);
 
 err_free_window:
+	printf("Lib: %d\n", __LINE__);
     _lv_ll_remove(&app->window_ll, window);
     lv_free(window);
     return NULL;
@@ -2327,7 +2386,7 @@ void lv_wayland_init(void)
     smm_init(&evs);
     smm_setctx(&application);
 
-#ifdef LV_WAYLAND_CLIENT_SIDE_DECORATIONS
+#if LV_WAYLAND_CLIENT_SIDE_DECORATIONS
     const char * env_disable_decorations = getenv("LV_WAYLAND_DISABLE_WINDOWDECORATION");
     application.opt_disable_decorations = ((env_disable_decorations != NULL) &&
                                            (env_disable_decorations[0] != '0'));
@@ -2335,7 +2394,7 @@ void lv_wayland_init(void)
 
     _lv_ll_init(&application.window_ll, sizeof(struct window));
 
-#ifndef LV_WAYLAND_TIMER_HANDLER
+#if LV_WAYLAND_TIMER_HANDLER
     application.cycle_timer = lv_timer_create(_lv_wayland_cycle, LV_WAYLAND_CYCLE_PERIOD, NULL);
     LV_ASSERT_MSG(application.cycle_timer, "failed to create cycle timer");
     if (!application.cycle_timer)
@@ -2425,6 +2484,7 @@ lv_display_t * lv_wayland_create_window(int32_t hor_res, int32_t ver_res, char *
 {
     struct window *window;
 
+	printf("Lib: %d\n", __LINE__);
     window = create_window(&application, hor_res, ver_res, title);
     if (!window)
     {
@@ -2432,8 +2492,10 @@ lv_display_t * lv_wayland_create_window(int32_t hor_res, int32_t ver_res, char *
         return NULL;
     }
 
+	printf("Lib: %d\n", __LINE__);
     window->close_cb = close_cb;
 
+	printf("Lib: %d\n", __LINE__);
     /* Initialize draw buffer */
     window->buf1 = lv_malloc(((hor_res * ver_res) / LVGL_DRAW_BUFFER_DIV) * sizeof(lv_color_t));
     if (!window->buf1)
@@ -2443,33 +2505,39 @@ lv_display_t * lv_wayland_create_window(int32_t hor_res, int32_t ver_res, char *
         return NULL;
     }
 
+	printf("Lib: %d\n", __LINE__);
     /* Initialize display */
 	window->lv_disp = lv_display_create(hor_res, ver_res);
 	lv_display_set_flush_cb(window->lv_disp, _lv_wayland_flush);
 	lv_display_set_buffers(window->lv_disp, window->buf1, NULL, (((hor_res * ver_res) / LVGL_DRAW_BUFFER_DIV) * sizeof(lv_color_t)), LV_DISPLAY_RENDER_MODE_PARTIAL); 
 	lv_display_set_user_data(window->lv_disp, window);
 
+	printf("Lib: %d\n", __LINE__);
     /* Register input */
     window->lv_indev_pointer = lv_indev_create();
 	lv_indev_set_type(window->lv_indev_pointer, LV_INDEV_TYPE_POINTER);
 	lv_indev_set_read_cb(window->lv_indev_pointer, _lv_wayland_pointer_read);
 	lv_indev_set_user_data(window->lv_indev_pointer, window);
 
+	printf("Lib: %d\n", __LINE__);
     window->lv_indev_pointeraxis = lv_indev_create();
 	lv_indev_set_type(window->lv_indev_pointeraxis, LV_INDEV_TYPE_ENCODER);
 	lv_indev_set_read_cb(window->lv_indev_pointeraxis, _lv_wayland_pointeraxis_read);
 	lv_indev_set_user_data(window->lv_indev_pointeraxis, window);
 
+	printf("Lib: %d\n", __LINE__);
     window->lv_indev_touch = lv_indev_create();
 	lv_indev_set_type(window->lv_indev_touch, LV_INDEV_TYPE_POINTER);
 	lv_indev_set_read_cb(window->lv_indev_touch, _lv_wayland_touch_read);
 	lv_indev_set_user_data(window->lv_indev_touch, window);
 
+	printf("Lib: %d\n", __LINE__);
     window->lv_indev_keyboard = lv_indev_create();
 	lv_indev_set_type(window->lv_indev_keyboard, LV_INDEV_TYPE_KEYPAD);
 	lv_indev_set_read_cb(window->lv_indev_keyboard, _lv_wayland_keyboard_read);
 	lv_indev_set_user_data(window->lv_indev_keyboard, window);
 
+	printf("Lib: %d\n", __LINE__);
     return window->lv_disp;
 }
 
@@ -2636,7 +2704,7 @@ lv_indev_t * lv_wayland_get_touchscreen(lv_display_t * disp)
     return window->lv_indev_touch;
 }
 
-#ifdef LV_WAYLAND_TIMER_HANDLER
+#if LV_WAYLAND_TIMER_HANDLER
 /**
  * Wayland specific timer handler (use in place of LVGL lv_timer_handler)
  * @return time until next timer expiry in milliseconds
@@ -2654,10 +2722,10 @@ uint32_t lv_wayland_timer_handler(void)
     /* Ready input timers (to probe for any input recieved) */
     _LV_LL_READ(&application.window_ll, window)
     {
-        input_timer[0] = window->lv_indev_pointer->driver->read_timer;
-        input_timer[1] = window->lv_indev_pointeraxis->driver->read_timer;
-        input_timer[2] = window->lv_indev_keyboard->driver->read_timer;
-        input_timer[3] = window->lv_indev_touch->driver->read_timer;
+        input_timer[0] = lv_indev_get_read_timer(window->lv_indev_pointer);
+        input_timer[1] = lv_indev_get_read_timer(window->lv_indev_pointeraxis);
+        input_timer[2] = lv_indev_get_read_timer(window->lv_indev_keyboard);
+        input_timer[3] = lv_indev_get_read_timer(window->lv_indev_touch);
 
         for (i = 0; i < 4; i++)
         {
@@ -2690,5 +2758,5 @@ uint32_t lv_wayland_timer_handler(void)
 
     return time_till_next;
 }
-#endif
+#endif // LV_WAYLAND_TIMER_HANDLER)
 #endif // LV_USE_WAYLAND

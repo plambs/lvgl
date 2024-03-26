@@ -10,6 +10,8 @@
 extern "C" {
 #endif
 
+#include "../../../lvgl.h"
+
 #if LV_USE_WAYLAND
 
 /*********************
@@ -37,7 +39,7 @@ lv_indev_t * lv_wayland_get_pointer(lv_display_t * disp);
 lv_indev_t * lv_wayland_get_pointeraxis(lv_display_t * disp);
 lv_indev_t * lv_wayland_get_keyboard(lv_display_t * disp);
 lv_indev_t * lv_wayland_get_touchscreen(lv_display_t * disp);
-#ifdef LV_WAYLAND_TIMER_HANDLER
+#if LV_WAYLAND_TIMER_HANDLER
 uint32_t lv_wayland_timer_handler(void);
 #endif
 

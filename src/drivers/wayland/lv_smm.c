@@ -283,6 +283,7 @@ void *smm_map(smm_buffer_t *buf)
          munmap(pool->map, pool->map_size);
       }
 
+	  printf("size: %d\n", pool->props.size);
       map = mmap(NULL,
                  pool->props.size,
                  PROT_READ | PROT_WRITE,

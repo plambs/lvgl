@@ -967,6 +967,10 @@
     #ifndef LV_WAYLAND_XDG_SHELL
         #define LV_WAYLAND_XDG_SHELL 1
     #endif
+	/* Enable wayland timer handler */
+	#ifndef LV_WAYLAND_TIMER_HANDLER
+		#define LV_WAYLAND_TIMER_HANDLER 1
+	#endif
 #endif
 
 /*==================
