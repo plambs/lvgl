@@ -1,16 +1,18 @@
 /**
- * @file wayland.c
+ * @file lv_wayland.c
  *
  */
+
+#include "../../../lvgl.h"
+
+#if LV_USE_WAYLAND
 
 /*********************
  *      INCLUDES
  *********************/
-#include "wayland.h"
-#include "smm.h"
 
-#if USE_WAYLAND
-
+#include "lv_wayland.h"
+#include "lv_smm.h"
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -2717,5 +2719,5 @@ uint32_t lv_wayland_timer_handler(void)
 
     return time_till_next;
 }
-#endif
-#endif // USE_WAYLAND
+#endif // LV_WAYLAND_TIMER_HANDLER)
+#endif // LV_USE_WAYLAND

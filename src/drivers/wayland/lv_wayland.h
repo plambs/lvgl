@@ -1,38 +1,18 @@
 /**
- * @file wayland
+ * @file lv_wayland.h
  *
  */
 
-#ifndef WAYLAND_H
-#define WAYLAND_H
+#ifndef LV_WAYLAND_H
+#define LV_WAYLAND_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*********************
- *      INCLUDES
- *********************/
-#ifndef LV_DRV_NO_CONF
-#ifdef LV_CONF_INCLUDE_SIMPLE
-#include "lv_drv_conf.h"
-#else
-#include "../../lv_drv_conf.h"
-#endif
-#endif
+#include "../../../lvgl.h"
 
-#if USE_WAYLAND
-
-#ifdef LV_LVGL_H_INCLUDE_SIMPLE
-#include "lvgl.h"
-#else
-#include "lvgl/lvgl.h"
-#endif
-
-#if LV_USE_USER_DATA == 0
-#error "Support for user data is required by wayland driver. Set LV_USE_USER_DATA to 1 in lv_conf.h"
-#endif
-
+#if LV_USE_WAYLAND
 
 /*********************
  *      DEFINES
@@ -67,10 +47,10 @@ uint32_t lv_wayland_timer_handler(void);
  *      MACROS
  **********************/
 
-#endif /* USE_WAYLAND */
+#endif /* LV_USE_WAYLAND */
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
-#endif /* WAYLAND_H */
+#endif /* LV_WAYLAND_H */

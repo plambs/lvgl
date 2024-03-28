@@ -1,9 +1,18 @@
 /**
- * @file smm.h
+ * @file lv_smm.h
  *
  */
-#ifndef SMM_H
-#define SMM_H
+#ifndef LV_SMM_H
+#define LV_SMM_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "../../../lvgl.h"
+
+#if LV_USE_WAYLAND
+
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -63,5 +72,11 @@ void *smm_map(smm_buffer_t *buf);
 void smm_release(smm_buffer_t *buf);
 smm_buffer_t *smm_latest(smm_group_t *grp);
 smm_buffer_t *smm_next(smm_buffer_t *buf);
+
+#endif /* LV_USE_WAYLAND */
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif

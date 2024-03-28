@@ -1,8 +1,11 @@
 /**
- * @file smm.c
+ * @file lv_smm.c
  *
  */
-#if USE_WAYLAND
+
+#include "../../../lvgl.h"
+
+#if LV_USE_WAYLAND
 
 #include <stddef.h>
 #include <errno.h>
@@ -15,7 +18,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "smm.h"
+#include "lv_smm.h"
 
 #define MAX_NAME_ATTEMPTS (5)
 #define PREFER_NUM_BUFFERS (3)
