@@ -42,6 +42,9 @@
 #if LV_USE_WINDOWS
     #include "drivers/windows/lv_windows_context.h"
 #endif
+#if LV_USE_WAYLAND
+    #include "drivers/wayland/lv_wayland.h"
+#endif
 
 /*********************
  *      DEFINES
@@ -189,6 +192,10 @@ void lv_init(void)
 
 #if LV_USE_WINDOWS
     lv_windows_platform_init();
+#endif
+
+#if LV_USE_WAYLAND
+	lv_wayland_init();
 #endif
 
     _lv_obj_style_init();
