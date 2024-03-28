@@ -1577,6 +1577,10 @@ menu "LVGL configuration"
 		config LV_USE_WINDOWS
 			bool "Use LVGL Windows backend"
 			default n
+
+		config LV_USE_WAYLAND
+			bool "Use LVGL Wayland backend"
+			default n
 	endmenu
 
 	menu "Examples"
