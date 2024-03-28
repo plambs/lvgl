@@ -89,8 +89,8 @@ struct input
 {
     struct
     {
-        lv_coord_t x;
-        lv_coord_t y;
+        int32_t x;
+        int32_t y;
         lv_indev_state_t left_button;
         lv_indev_state_t right_button;
         lv_indev_state_t wheel_button;
@@ -105,8 +105,8 @@ struct input
 
     struct
     {
-        lv_coord_t x;
-        lv_coord_t y;
+        int32_t x;
+        int32_t y;
         lv_indev_state_t state;
     } touch;
 };
@@ -185,20 +185,12 @@ struct application
 
 struct window
 {
-    lv_disp_drv_t lv_disp_drv;
-    lv_disp_draw_buf_t lv_disp_draw_buf;
-    lv_disp_t *lv_disp;
+    lv_display_t * lv_disp;
+	void * buf1;
 
-    lv_indev_drv_t lv_indev_drv_pointer;
     lv_indev_t * lv_indev_pointer;
-
-    lv_indev_drv_t lv_indev_drv_pointeraxis;
     lv_indev_t * lv_indev_pointeraxis;
-
-    lv_indev_drv_t lv_indev_drv_touch;
     lv_indev_t * lv_indev_touch;
-
-    lv_indev_drv_t lv_indev_drv_keyboard;
     lv_indev_t * lv_indev_keyboard;
 
     lv_wayland_display_close_f_t close_cb;
@@ -1295,7 +1287,7 @@ static void cache_apply_areas(struct window *window, void *dest, void *src, smm_
 {
     unsigned long offset;
     unsigned char start;
-    lv_coord_t y;
+    int32_t y;
     lv_area_t *dmg;
     lv_area_t *next_dmg;
     smm_buffer_t *next_buf = smm_next(src_buf);
@@ -1805,20 +1797,17 @@ static bool resize_window(struct window *window, int width, int height)
     if (window->lv_disp != NULL)
     {
         /* Resize draw buffer */
-        buf1 = lv_malloc(((width * height) / LVGL_DRAW_BUFFER_DIV) * sizeof(lv_color_t));
+        window->buf1 = lv_malloc(((width * height) / LVGL_DRAW_BUFFER_DIV) * sizeof(lv_color_t));
         if (!buf1)
         {
             LV_LOG_ERROR("failed to resize draw buffer");
             return false;
        }
 
-       lv_free(window->lv_disp_draw_buf.buf1);
-       lv_disp_draw_buf_init(&window->lv_disp_draw_buf, buf1, NULL, (width * height) / LVGL_DRAW_BUFFER_DIV);
-
-        /* Propagate resize to LVGL */
-        window->lv_disp_drv.hor_res = width;
-        window->lv_disp_drv.ver_res = height;
-        lv_disp_drv_update(window->lv_disp, &window->lv_disp_drv);
+       lv_free(window->buf1);
+	   lv_display_set_buffers(window->lv_disp, window->buf1, NULL,
+	                          (((width * height) / LVGL_DRAW_BUFFER_DIV) * BYTES_PER_PIXEL),
+	                          LV_DISPLAY_RENDER_MODE_PARTIAL);
 
         window->body->input.pointer.x = LV_MIN(window->body->input.pointer.x, (width - 1));
         window->body->input.pointer.y = LV_MIN(window->body->input.pointer.y, (height - 1));
@@ -1996,20 +1985,22 @@ static void destroy_window(struct window *window)
     destroy_graphic_obj(window->body);
 }
 
-static void _lv_wayland_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p)
+static void _lv_wayland_flush(lv_display_t * disp, const lv_area_t * area, uint8_t * color_p)
 {
     unsigned long offset;
     int32_t x;
     int32_t y;
     void *buf_base;
     struct wl_buffer *wl_buf;
-    lv_coord_t src_width = (area->x2 - area->x1 + 1);
-    lv_coord_t src_height = (area->y2 - area->y1 + 1);
-    struct window *window = disp_drv->user_data;
+    int32_t src_width = (area->x2 - area->x1 + 1);
+    int32_t src_height = (area->y2 - area->y1 + 1);
+    struct window *window = lv_display_get_user_data(disp);
     smm_buffer_t *buf = window->body->pending_buffer;
 
-    const lv_coord_t hres = (disp_drv->rotated == 0) ? (disp_drv->hor_res) : (disp_drv->ver_res);
-    const lv_coord_t vres = (disp_drv->rotated == 0) ? (disp_drv->ver_res) : (disp_drv->hor_res);
+    const int32_t hres = (lv_display_get_rotation(disp) == 0) ?
+	                     lv_display_get_horizontal_resolution(disp) : lv_display_get_vertical_resolution(disp);
+    const int32_t vres = (lv_display_get_rotation(disp) == 0) ?
+	                     lv_display_get_vertical_resolution(disp) : lv_display_get_horizontal_resolution(disp);
 
     /* If window has been / is being closed, or is not visible, skip flush */
     if (window->closed || window->shall_close)
@@ -2053,7 +2044,7 @@ static void _lv_wayland_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv
     /* Modify specified area in buffer */
     for (y = area->y1; y <= area->y2; y++)
     {
-        offset = ((area->x1 + (y * disp_drv->hor_res)) * BYTES_PER_PIXEL);
+        offset = ((area->x1 + (y * lv_display_get_horizontal_resolution(disp))) * BYTES_PER_PIXEL);
 #if (LV_COLOR_DEPTH == 1)
         for (x = 0; x < src_width; x++)
         {
@@ -2081,7 +2072,7 @@ static void _lv_wayland_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv
     /* Cache buffer damage for future buffer initializations */
     cache_add_area(window, buf, area);
 
-    if (lv_disp_flush_is_last(disp_drv))
+    if (lv_display_flush_is_last(disp))
     {
         if (window->body->surface_configured) {
             /* Finally, attach buffer and commit to surface */
@@ -2106,7 +2097,7 @@ skip:
         window->body->pending_buffer = NULL;
     }
 done:
-    lv_disp_flush_ready(disp_drv);
+    lv_display_flush_ready(disp);
 }
 
 static void _lv_wayland_handle_input(void)
@@ -2211,9 +2202,9 @@ static void _lv_wayland_cycle(lv_timer_t * tmr)
     _lv_wayland_handle_output();
 }
 
-static void _lv_wayland_pointer_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
+static void _lv_wayland_pointer_read(lv_indev_t *drv, lv_indev_data_t *data)
 {
-    struct window *window = drv->disp->driver->user_data;
+    struct window *window = lv_indev_get_user_data(drv);
     if (!window || window->closed)
     {
         return;
@@ -2224,9 +2215,9 @@ static void _lv_wayland_pointer_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
     data->state = window->body->input.pointer.left_button;
 }
 
-static void _lv_wayland_pointeraxis_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
+static void _lv_wayland_pointeraxis_read(lv_indev_t *drv, lv_indev_data_t *data)
 {
-    struct window *window = drv->disp->driver->user_data;
+    struct window *window = lv_indev_get_user_data(drv);
     if (!window || window->closed)
     {
         return;
@@ -2238,9 +2229,9 @@ static void _lv_wayland_pointeraxis_read(lv_indev_drv_t *drv, lv_indev_data_t *d
     window->body->input.pointer.wheel_diff = 0;
 }
 
-static void _lv_wayland_keyboard_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
+static void _lv_wayland_keyboard_read(lv_indev_t *drv, lv_indev_data_t *data)
 {
-    struct window *window = drv->disp->driver->user_data;
+    struct window *window = lv_indev_get_user_data(drv);
     if (!window || window->closed)
     {
         return;
@@ -2250,9 +2241,9 @@ static void _lv_wayland_keyboard_read(lv_indev_drv_t *drv, lv_indev_data_t *data
     data->state = window->body->input.keyboard.state;
 }
 
-static void _lv_wayland_touch_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
+static void _lv_wayland_touch_read(lv_indev_t *drv, lv_indev_data_t *data)
 {
-    struct window *window = drv->disp->driver->user_data;
+    struct window *window = lv_indev_get_user_data(drv);
     if (!window || window->closed)
     {
         return;
@@ -2422,10 +2413,9 @@ int lv_wayland_get_fd(void)
  * @param close_cb function to be called when the window gets closed by the user (optional)
  * @return new display backed by a Wayland window, or NULL on error
  */
-lv_disp_t * lv_wayland_create_window(lv_coord_t hor_res, lv_coord_t ver_res, char *title,
+lv_display_t * lv_wayland_create_window(int32_t hor_res, int32_t ver_res, char *title,
                                      lv_wayland_display_close_f_t close_cb)
 {
-    lv_color_t * buf1 = NULL;
     struct window *window;
 
     window = create_window(&application, hor_res, ver_res, title);
@@ -2435,71 +2425,54 @@ lv_disp_t * lv_wayland_create_window(lv_coord_t hor_res, lv_coord_t ver_res, cha
         return NULL;
     }
 
+	printf("Lib: %d\n", __LINE__);
     window->close_cb = close_cb;
 
+	printf("Lib: %d\n", __LINE__);
     /* Initialize draw buffer */
-    buf1 = lv_malloc(((hor_res * ver_res) / LVGL_DRAW_BUFFER_DIV) * sizeof(lv_color_t));
-    if (!buf1)
+    window->buf1 = lv_malloc(((hor_res * ver_res) / LVGL_DRAW_BUFFER_DIV) * sizeof(lv_color_t));
+    if (!window->buf1)
     {
         LV_LOG_ERROR("failed to allocate draw buffer");
         destroy_window(window);
         return NULL;
     }
 
-    lv_disp_draw_buf_init(&window->lv_disp_draw_buf, buf1, NULL, (hor_res * ver_res) / LVGL_DRAW_BUFFER_DIV);
+	printf("Lib: %d\n", __LINE__);
+    /* Initialize display */
+	window->lv_disp = lv_display_create(hor_res, ver_res);
+	lv_display_set_flush_cb(window->lv_disp, _lv_wayland_flush);
+	lv_display_set_buffers(window->lv_disp, window->buf1, NULL,
+	                       (((hor_res * ver_res) / LVGL_DRAW_BUFFER_DIV) * BYTES_PER_PIXEL),
+	                       LV_DISPLAY_RENDER_MODE_PARTIAL); 
+	lv_display_set_user_data(window->lv_disp, window);
 
-    /* Initialize display driver */
-    lv_disp_drv_init(&window->lv_disp_drv);
-    window->lv_disp_drv.draw_buf = &window->lv_disp_draw_buf;
-    window->lv_disp_drv.hor_res = hor_res;
-    window->lv_disp_drv.ver_res = ver_res;
-    window->lv_disp_drv.flush_cb = _lv_wayland_flush;
-    window->lv_disp_drv.user_data = window;
-
-    /* Register display */
-    window->lv_disp = lv_disp_drv_register(&window->lv_disp_drv);
-
+	printf("Lib: %d\n", __LINE__);
     /* Register input */
-    lv_indev_drv_init(&window->lv_indev_drv_pointer);
-    window->lv_indev_drv_pointer.type = LV_INDEV_TYPE_POINTER;
-    window->lv_indev_drv_pointer.read_cb = _lv_wayland_pointer_read;
-    window->lv_indev_drv_pointer.disp = window->lv_disp;
-    window->lv_indev_pointer = lv_indev_drv_register(&window->lv_indev_drv_pointer);
-    if (!window->lv_indev_pointer)
-    {
-        LV_LOG_ERROR("failed to register pointer indev");
-    }
+    window->lv_indev_pointer = lv_indev_create();
+	lv_indev_set_type(window->lv_indev_pointer, LV_INDEV_TYPE_POINTER);
+	lv_indev_set_read_cb(window->lv_indev_pointer, _lv_wayland_pointer_read);
+	lv_indev_set_user_data(window->lv_indev_pointer, window);
 
-    lv_indev_drv_init(&window->lv_indev_drv_pointeraxis);
-    window->lv_indev_drv_pointeraxis.type = LV_INDEV_TYPE_ENCODER;
-    window->lv_indev_drv_pointeraxis.read_cb = _lv_wayland_pointeraxis_read;
-    window->lv_indev_drv_pointeraxis.disp = window->lv_disp;
-    window->lv_indev_pointeraxis = lv_indev_drv_register(&window->lv_indev_drv_pointeraxis);
-    if (!window->lv_indev_pointeraxis)
-    {
-        LV_LOG_ERROR("failed to register pointeraxis indev");
-    }
+	printf("Lib: %d\n", __LINE__);
+    window->lv_indev_pointeraxis = lv_indev_create();
+	lv_indev_set_type(window->lv_indev_pointeraxis, LV_INDEV_TYPE_ENCODER);
+	lv_indev_set_read_cb(window->lv_indev_pointeraxis, _lv_wayland_pointeraxis_read);
+	lv_indev_set_user_data(window->lv_indev_pointeraxis, window);
 
-    lv_indev_drv_init(&window->lv_indev_drv_touch);
-    window->lv_indev_drv_touch.type = LV_INDEV_TYPE_POINTER;
-    window->lv_indev_drv_touch.read_cb = _lv_wayland_touch_read;
-    window->lv_indev_drv_touch.disp = window->lv_disp;
-    window->lv_indev_touch = lv_indev_drv_register(&window->lv_indev_drv_touch);
-    if (!window->lv_indev_touch)
-    {
-        LV_LOG_ERROR("failed to register touch indev");
-    }
+	printf("Lib: %d\n", __LINE__);
+    window->lv_indev_touch = lv_indev_create();
+	lv_indev_set_type(window->lv_indev_touch, LV_INDEV_TYPE_POINTER);
+	lv_indev_set_read_cb(window->lv_indev_touch, _lv_wayland_touch_read);
+	lv_indev_set_user_data(window->lv_indev_touch, window);
 
-    lv_indev_drv_init(&window->lv_indev_drv_keyboard);
-    window->lv_indev_drv_keyboard.type = LV_INDEV_TYPE_KEYPAD;
-    window->lv_indev_drv_keyboard.read_cb = _lv_wayland_keyboard_read;
-    window->lv_indev_drv_keyboard.disp = window->lv_disp;
-    window->lv_indev_keyboard = lv_indev_drv_register(&window->lv_indev_drv_keyboard);
-    if (!window->lv_indev_keyboard)
-    {
-        LV_LOG_ERROR("failed to register keyboard indev");
-    }
+	printf("Lib: %d\n", __LINE__);
+    window->lv_indev_keyboard = lv_indev_create();
+	lv_indev_set_type(window->lv_indev_keyboard, LV_INDEV_TYPE_KEYPAD);
+	lv_indev_set_read_cb(window->lv_indev_keyboard, _lv_wayland_keyboard_read);
+	lv_indev_set_user_data(window->lv_indev_keyboard, window);
 
+	printf("Lib: %d\n", __LINE__);
     return window->lv_disp;
 }
 
@@ -2507,9 +2480,9 @@ lv_disp_t * lv_wayland_create_window(lv_coord_t hor_res, lv_coord_t ver_res, cha
  * Close wayland window
  * @param disp LVGL display using window to be closed
  */
-void lv_wayland_close_window(lv_disp_t * disp)
+void lv_wayland_close_window(lv_display_t * disp)
 {
-    struct window *window = disp->driver->user_data;
+    struct window *window = lv_display_get_user_data(disp);
     if (!window || window->closed)
     {
         return;
@@ -2523,7 +2496,7 @@ void lv_wayland_close_window(lv_disp_t * disp)
  * argument is NULL), check if any Wayland window is open.
  * @return true if window open, false otherwise
  */
-bool lv_wayland_window_is_open(lv_disp_t * disp)
+bool lv_wayland_window_is_open(lv_display_t * disp)
 {
     struct window *window;
     bool open = false;
@@ -2541,7 +2514,7 @@ bool lv_wayland_window_is_open(lv_disp_t * disp)
     }
     else
     {
-        window = disp->driver->user_data;
+        window = lv_display_get_user_data(disp);
         open = (!window->closed);
     }
 
@@ -2553,9 +2526,9 @@ bool lv_wayland_window_is_open(lv_disp_t * disp)
  * @param disp LVGL display using window to be set/unset fullscreen
  * @param fullscreen requested status (true = fullscreen)
  */
-void lv_wayland_window_set_fullscreen(lv_disp_t * disp, bool fullscreen)
+void lv_wayland_window_set_fullscreen(lv_display_t * disp, bool fullscreen)
 {
-    struct window *window = disp->driver->user_data;
+    struct window *window = lv_display_get_user_data(disp);
     if (!window || window->closed)
     {
         return;
@@ -2611,9 +2584,9 @@ void lv_wayland_window_set_fullscreen(lv_disp_t * disp, bool fullscreen)
  * @param disp LVGL display
  * @return input device connected to pointer events, or NULL on error
  */
-lv_indev_t * lv_wayland_get_pointer(lv_disp_t * disp)
+lv_indev_t * lv_wayland_get_pointer(lv_display_t * disp)
 {
-    struct window *window = disp->driver->user_data;
+    struct window *window = lv_display_get_user_data(disp);
     if (!window)
     {
         return NULL;
@@ -2626,9 +2599,9 @@ lv_indev_t * lv_wayland_get_pointer(lv_disp_t * disp)
  * @param disp LVGL display
  * @return input device connected to pointer axis events, or NULL on error
  */
-lv_indev_t * lv_wayland_get_pointeraxis(lv_disp_t * disp)
+lv_indev_t * lv_wayland_get_pointeraxis(lv_display_t * disp)
 {
-    struct window *window = disp->driver->user_data;
+    struct window *window = lv_display_get_user_data(disp);
     if (!window)
     {
         return NULL;
@@ -2641,9 +2614,9 @@ lv_indev_t * lv_wayland_get_pointeraxis(lv_disp_t * disp)
  * @param disp LVGL display
  * @return input device connected to keyboard, or NULL on error
  */
-lv_indev_t * lv_wayland_get_keyboard(lv_disp_t * disp)
+lv_indev_t * lv_wayland_get_keyboard(lv_display_t * disp)
 {
-    struct window *window = disp->driver->user_data;
+    struct window *window = lv_display_get_user_data(disp);
     if (!window)
     {
         return NULL;
@@ -2656,9 +2629,9 @@ lv_indev_t * lv_wayland_get_keyboard(lv_disp_t * disp)
  * @param disp LVGL display
  * @return input device connected to touchscreen, or NULL on error
  */
-lv_indev_t * lv_wayland_get_touchscreen(lv_disp_t * disp)
+lv_indev_t * lv_wayland_get_touchscreen(lv_display_t * disp)
 {
-    struct window *window = disp->driver->user_data;
+    struct window *window = lv_display_get_user_data(disp);
     if (!window)
     {
         return NULL;
@@ -2684,10 +2657,10 @@ uint32_t lv_wayland_timer_handler(void)
     /* Ready input timers (to probe for any input recieved) */
     _LV_LL_READ(&application.window_ll, window)
     {
-        input_timer[0] = window->lv_indev_pointer->driver->read_timer;
-        input_timer[1] = window->lv_indev_pointeraxis->driver->read_timer;
-        input_timer[2] = window->lv_indev_keyboard->driver->read_timer;
-        input_timer[3] = window->lv_indev_touch->driver->read_timer;
+        input_timer[0] = lv_indev_get_read_timer(window->lv_indev_pointer);
+        input_timer[1] = lv_indev_get_read_timer(window->lv_indev_pointeraxis);
+        input_timer[2] = lv_indev_get_read_timer(window->lv_indev_keyboard);
+        input_timer[3] = lv_indev_get_read_timer(window->lv_indev_touch);
 
         for (i = 0; i < 4; i++)
         {
