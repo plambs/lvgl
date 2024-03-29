@@ -168,7 +168,7 @@ struct application
 
     const char *xdg_runtime_dir;
 
-#ifdef LV_WAYLAND_CLIENT_SIDE_DECORATIONS
+#if LV_WAYLAND_CLIENT_SIDE_DECORATIONS
     bool opt_disable_decorations;
 #endif
 
@@ -306,7 +306,6 @@ static void shm_format(void *data, struct wl_shm *wl_shm, uint32_t format)
 
     switch (format)
     {
-#if (LV_COLOR_DEPTH == 32)
     case WL_SHM_FORMAT_ARGB8888:
         app->format = format;
         break;
@@ -316,19 +315,12 @@ static void shm_format(void *data, struct wl_shm *wl_shm, uint32_t format)
             app->format = format;
         }
         break;
-#elif (LV_COLOR_DEPTH == 16)
     case WL_SHM_FORMAT_RGB565:
         app->format = format;
         break;
-#elif (LV_COLOR_DEPTH == 8)
     case WL_SHM_FORMAT_RGB332:
         app->format = format;
         break;
-#elif (LV_COLOR_DEPTH == 1)
-    case WL_SHM_FORMAT_RGB332:
-        app->format = format;
-        break;
-#endif
     default:
         break;
     }
@@ -2376,7 +2368,7 @@ void lv_wayland_init(void)
     smm_init(&evs);
     smm_setctx(&application);
 
-#ifdef LV_WAYLAND_CLIENT_SIDE_DECORATIONS
+#if LV_WAYLAND_CLIENT_SIDE_DECORATIONS
     const char * env_disable_decorations = getenv("LV_WAYLAND_DISABLE_WINDOWDECORATION");
     application.opt_disable_decorations = ((env_disable_decorations != NULL) &&
                                            (env_disable_decorations[0] != '0'));
@@ -2384,7 +2376,7 @@ void lv_wayland_init(void)
 
     _lv_ll_init(&application.window_ll, sizeof(struct window));
 
-#ifndef LV_WAYLAND_TIMER_HANDLER
+#if LV_WAYLAND_TIMER_HANDLER
     application.cycle_timer = lv_timer_create(_lv_wayland_cycle, LV_WAYLAND_CYCLE_PERIOD, NULL);
     LV_ASSERT_MSG(application.cycle_timer, "failed to create cycle timer");
     if (!application.cycle_timer)
@@ -2695,7 +2687,7 @@ lv_indev_t * lv_wayland_get_touchscreen(lv_display_t * disp)
     return window->lv_indev_touch;
 }
 
-#ifdef LV_WAYLAND_TIMER_HANDLER
+#if LV_WAYLAND_TIMER_HANDLER
 /**
  * Wayland specific timer handler (use in place of LVGL lv_timer_handler)
  * @return time until next timer expiry in milliseconds
