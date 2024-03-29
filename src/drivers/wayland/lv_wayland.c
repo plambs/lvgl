@@ -2106,7 +2106,9 @@ static void _lv_wayland_flush(lv_display_t * disp, const lv_area_t * area, uint8
         memcpy(((char *)buf_base) + offset,
                color_p,
                src_width * BYTES_PER_PIXEL);
-        color_p += src_width;
+        color_p += src_width * BYTES_PER_PIXEL;
+		/* ADAPT TO WAYLAND WANTED FORMAT */
+		/* USING WINDOW APP FORMAT ? */
 #endif
     }
 
