@@ -2494,6 +2494,30 @@ lv_display_t * lv_wayland_create_window(int32_t hor_res, int32_t ver_res, char *
 	                       (((hor_res * ver_res) / LVGL_DRAW_BUFFER_DIV) * BYTES_PER_PIXEL),
 	                       LV_DISPLAY_RENDER_MODE_PARTIAL); 
 	lv_display_set_user_data(window->lv_disp, window);
+	/**/
+
+	/* Adapt lv_display pixel format to wayland actual pixel format */
+	lv_color_format_t px_format;
+	switch(window->application->format)
+    {
+		case WL_SHM_FORMAT_XRGB8888:
+			LV_LOG_INFO("WL_SHM_FORMAT is XRGB8888");
+			px_format = LV_COLOR_FORMAT_XRGB8888;
+			break;
+		case WL_SHM_FORMAT_ARGB8888:
+			LV_LOG_INFO("WL_SHM_FORMAT is ARGB8888");
+			px_format = LV_COLOR_FORMAT_ARGB8888;
+			break;
+		case WL_SHM_FORMAT_RGB565:
+			LV_LOG_INFO("WL_SHM_FORMAT is RGB565");
+			px_format = LV_COLOR_FORMAT_RGB565;
+			break;
+		case WL_SHM_FORMAT_RGB332:
+		default:
+			LV_LOG_ERROR("WL_SHM_FORMAT is unsupported");
+			break;
+	}
+	lv_display_set_color_format(window->lv_disp, px_format);
 
 	printf("Lib: %d\n", __LINE__);
     /* Register input */
