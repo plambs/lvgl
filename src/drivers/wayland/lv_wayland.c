@@ -242,6 +242,47 @@ struct window
  *   STATIC VARIABLES and FUNTIONS
  *********************************/
 
+/*
+ * In lvgl V8 this function work was handled by the lv_color_fill function, since it doesnt
+ * Exist anymore we need to a substitute. It handle both LV_COLOR_DEPT 16 and 32 but not 8.
+ * The wayland buffer as a format and we need to respect it, we support RGB888 or RGB565.
+ * This is only used to create the client side decoration.
+ */
+static void _color_fill(lv_color_t * buf, lv_color_t color, uint32_t px_num, uint32_t format)
+{
+	printf("%s:%s:%d: px_num: %d, size: %d, format: %d, BPP: %d\n", __FILE__, __func__, __LINE__, px_num, sizeof(lv_color_t), format, BYTES_PER_PIXEL);
+
+	uint16_t color16 = lv_color_to_u16(color);
+	uint32_t color32 = lv_color_to_u32(color);
+	char *buf_ptr = (char*)buf;
+	char *color_ptr;
+	uint8_t bytes_to_copy = 0;
+
+	switch(format)
+	{
+		case WL_SHM_FORMAT_ARGB8888:
+		case WL_SHM_FORMAT_XRGB8888:
+		    /* Convert to RG888 */
+			bytes_to_copy = 3;
+			color_ptr = (char*)&color32;
+			break;
+		case WL_SHM_FORMAT_RGB565:
+		    /* Convert to RG565*/
+			bytes_to_copy = 2;
+			color_ptr = (char*)&color16;
+			break;
+		case WL_SHM_FORMAT_RGB332:
+		default:
+			LV_LOG_ERROR("Unsupported format: %d\n", format);
+			return;
+			break;
+	}
+
+    for(int px_index = 0; px_index < px_num; px_index++) {
+		memcpy((buf_ptr + (px_index * bytes_to_copy)), color_ptr, bytes_to_copy);
+    }
+}
+
 static struct application application;
 
 static inline bool _is_digit(char ch)
@@ -1668,12 +1709,16 @@ static bool create_decoration(struct window *window,
     switch (decoration->type)
     {
     case OBJECT_TITLEBAR:
-        lv_color_fill((lv_color_t *)buf_base,
-                      lv_color_make(0x66, 0x66, 0x66), (decoration->width * decoration->height));
+        _color_fill((lv_color_t *)buf_base,
+                      lv_color_make(0x66, 0x66, 0x66),
+					  (decoration->width * decoration->height),
+					  window->application->format);
         break;
     case OBJECT_BUTTON_CLOSE:
-        lv_color_fill((lv_color_t *)buf_base,
-                      lv_color_make(0xCC, 0xCC, 0xCC), (decoration->width * decoration->height));
+        _color_fill((lv_color_t *)buf_base,
+                      lv_color_make(0xCC, 0xCC, 0xCC),
+					  (decoration->width * decoration->height),
+					  window->application->format);
         for (y = 0; y < decoration->height; y++)
         {
             for (x = 0; x < decoration->width; x++)
@@ -1695,8 +1740,10 @@ static bool create_decoration(struct window *window,
         break;
 #if LV_WAYLAND_XDG_SHELL
     case OBJECT_BUTTON_MAXIMIZE:
-        lv_color_fill((lv_color_t *)buf_base,
-                      lv_color_make(0xCC, 0xCC, 0xCC), (decoration->width * decoration->height));
+        _color_fill((lv_color_t *)buf_base,
+                      lv_color_make(0xCC, 0xCC, 0xCC),
+					  (decoration->width * decoration->height),
+					  window->application->format);
         for (y = 0; y < decoration->height; y++)
         {
             for (x = 0; x < decoration->width; x++)
@@ -1714,8 +1761,10 @@ static bool create_decoration(struct window *window,
         }
         break;
     case OBJECT_BUTTON_MINIMIZE:
-        lv_color_fill((lv_color_t *)buf_base,
-                      lv_color_make(0xCC, 0xCC, 0xCC), (decoration->width * decoration->height));
+        _color_fill((lv_color_t *)buf_base,
+                      lv_color_make(0xCC, 0xCC, 0xCC),
+					  (decoration->width * decoration->height),
+					  window->application->format);
         for (y = 0; y < decoration->height; y++)
         {
             for (x = 0; x < decoration->width; x++)
@@ -1737,8 +1786,10 @@ static bool create_decoration(struct window *window,
     case OBJECT_BORDER_LEFT:
         /* fallthrough */
     case OBJECT_BORDER_RIGHT:
-        lv_color_fill((lv_color_t *)buf_base,
-                      lv_color_make(0x66, 0x66, 0x66), (decoration->width * decoration->height));
+        _color_fill((lv_color_t *)buf_base,
+                      lv_color_make(0x66, 0x66, 0x66),
+					  (decoration->width * decoration->height),
+					  window->application->format);
         break;
     default:
         LV_ASSERT_MSG(0, "Invalid object type");
