@@ -1845,7 +1845,7 @@ static bool resize_window(struct window *window, int width, int height)
     if (window->lv_disp != NULL)
     {
         /* Resize draw buffer */
-        window->buf1 = lv_malloc(((width * height) / LVGL_DRAW_BUFFER_DIV) * sizeof(lv_color_t));
+        window->buf1 = lv_malloc(((width * height) / LVGL_DRAW_BUFFER_DIV) * BYTES_PER_PIXEL);
         if (!buf1)
         {
             LV_LOG_ERROR("failed to resize draw buffer");
@@ -2478,7 +2478,7 @@ lv_display_t * lv_wayland_create_window(int32_t hor_res, int32_t ver_res, char *
 
 	printf("Lib: %d\n", __LINE__);
     /* Initialize draw buffer */
-    window->buf1 = lv_malloc(((hor_res * ver_res) / LVGL_DRAW_BUFFER_DIV) * sizeof(lv_color_t));
+    window->buf1 = lv_malloc(((hor_res * ver_res) / LVGL_DRAW_BUFFER_DIV) * BYTES_PER_PIXEL);
     if (!window->buf1)
     {
         LV_LOG_ERROR("failed to allocate draw buffer");
