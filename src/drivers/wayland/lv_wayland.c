@@ -36,6 +36,11 @@
 #error "Please select at least one shell integration for Wayland driver"
 #endif
 
+#if !(LV_COLOR_DEPTH == 16 || LV_COLOR_DEPTH == 32)
+#error "Please select LV_COLOR_DEPTH to 16 or 32"
+#endif
+
+
 #if LV_WAYLAND_XDG_SHELL
 #include "protocols/wayland-xdg-shell-client-protocol.h"
 #endif
